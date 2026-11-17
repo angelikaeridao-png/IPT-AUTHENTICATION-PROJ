@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ClassTag</string>
+    <string name="tagline">Your classes, organized by tag</string>
+    <string name="search_hint">Search subjects, topics, teachers…</string>
+    <string name="today_schedule">Today\'s schedule</string>
+    <string name="class_tags">Class tags</string>
+    <string name="see_all">See all</string>
+    <string name="announcements">Announcements</string>
+    <string name="greeting_morning">Good morning</string>
+    <string name="greeting_afternoon">Good afternoon</string>
+    <string name="greeting_evening">Good evening</string>
+
+    <string name="stat_attendance">Attendance</string>
+    <string name="stat_gpa">GPA</string>
+    <string name="stat_due">Due this week</string>
+
+    <string name="nav_home">Home</string>
+    <string name="nav_schedule">Schedule</string>
+    <string name="nav_add">Add</string>
+    <string name="nav_notices">Notices</string>
+    <string name="nav_profile">Profile</string>
+
+    <string name="student_name">Angelika</string>
+    <string name="topics_count">%1$s topics</string>
+    <string name="greeting_template">%1$s, %2$s</string>
+    <string name="stat_attendance_value">96%%</string>
+    <string name="stat_gpa_value">3.8</string>
+    <string name="stat_due_value">3</string>
+
+    <!-- Authentication Strings -->
+    <string name="title_login">Welcome Back</string>
+    <string name="subtitle_login">Sign in to access your ClassTag portal</string>
+    <string name="title_register">Create Account</string>
+    <string name="subtitle_register">Join ClassTag to organize your classes</string>
+    <string name="label_email">Email Address</string>
+    <string name="label_password">Password</string>
+    <string name="label_confirm_password">Confirm Password</string>
+    <string name="label_full_name">Full Name</string>
+    <string name="hint_email">student@example.com</string>
+    <string name="btn_login">SIGN IN</string>
+    <string name="btn_register">REGISTER</string>
+    <string name="btn_demo_login">GUEST DEMO LOGIN</string>
+    <string name="btn_logout">LOG OUT</string>
+    <string name="btn_clear">CLEAR FORM</string>
+    <string name="link_register">Don\'t have an account? <b>Register</b></string>
+    <string name="link_login">Already have an account? <b>Log In</b></string>
+    <string name="error_email_required">Email is required</string>
+    <string name="error_password_required">Password is required</string>
+    <string name="error_password_min_length">Password must be at least 6 characters</string>
+    <string name="error_passwords_dont_match">Passwords do not match</string>
+    <string name="error_auth_failed">Authentication failed: %1$s</string>
+    <string name="msg_login_success">Welcome back!</string>
+    <string name="msg_register_success">Account registered successfully!</string>
+    <string name="msg_logout_success">Logged out successfully</string>
+    <string name="dialog_add_tag_title">Add New Class Tag</string>
+    <string name="dialog_add_tag_hint">Tag Name (e.g., #MobileDev)</string>
+    <string name="btn_add">ADD</string>
+    <string name="btn_cancel">CANCEL</string>
+</resources>
