@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.classtag"
-        minSdk = 28
+        minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -19,9 +19,11 @@ android {
 
     buildTypes {
         release {
-            optimization {
-                enable = false
-            }
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
     compileOptions {
@@ -31,13 +33,17 @@ android {
 }
 
 dependencies {
+    implementation(libs.appcompat)
+    implementation(libs.material)
+    implementation(libs.activity.ktx)
+    implementation(libs.constraintlayout)
+
+    // Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
-    implementation(libs.activity.ktx)
-    implementation(libs.appcompat)
-    implementation(libs.constraintlayout)
-    implementation(libs.material)
+
+    // Testing
     testImplementation(libs.junit)
-    androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.ext.junit)
+    androidTestImplementation(libs.espresso.core)
 }

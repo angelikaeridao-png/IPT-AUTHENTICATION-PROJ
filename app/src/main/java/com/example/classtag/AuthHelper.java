@@ -61,6 +61,48 @@ public class AuthHelper {
         return prefs.getString(KEY_USER_NAME, "Angelika");
     }
 
+    public static boolean isEmailRegistered(Context context, String email) {
+        if (context == null || email == null || email.trim().isEmpty()) {
+            return false;
+        }
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        String cleanEmail = email.trim().toLowerCase();
+        return prefs.getBoolean("reg_user_" + cleanEmail, false);
+    }
+
+    public static void registerUser(Context context, String email, String password, String name) {
+        if (context == null || email == null || email.trim().isEmpty()) {
+            return;
+        }
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        String cleanEmail = email.trim().toLowerCase();
+        String displayName = (name != null && !name.trim().isEmpty()) ? name : cleanEmail.split("@")[0];
+        prefs.edit()
+                .putBoolean("reg_user_" + cleanEmail, true)
+                .putString("reg_pass_" + cleanEmail, password != null ? password : "")
+                .putString("reg_name_" + cleanEmail, displayName)
+                .apply();
+    }
+
+    public static boolean verifyUserPassword(Context context, String email, String password) {
+        if (context == null || email == null || password == null) {
+            return false;
+        }
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        String cleanEmail = email.trim().toLowerCase();
+        String savedPassword = prefs.getString("reg_pass_" + cleanEmail, null);
+        return savedPassword != null && savedPassword.equals(password);
+    }
+
+    public static String getRegisteredName(Context context, String email) {
+        if (context == null || email == null || email.trim().isEmpty()) {
+            return "";
+        }
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        String cleanEmail = email.trim().toLowerCase();
+        return prefs.getString("reg_name_" + cleanEmail, cleanEmail.split("@")[0]);
+    }
+
     public static void setLocalUserSession(Context context, String email, String name) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         prefs.edit()
@@ -81,6 +123,10 @@ public class AuthHelper {
         }
 
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        prefs.edit().clear().apply();
+        prefs.edit()
+                .remove(KEY_LOGGED_IN)
+                .remove(KEY_USER_EMAIL)
+                .remove(KEY_USER_NAME)
+                .apply();
     }
 }

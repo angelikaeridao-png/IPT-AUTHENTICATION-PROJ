@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "123456789012",
-    "project_id": "classtag-app",
-    "storage_bucket": "classtag-app.appspot.com"
+    "project_number": "429802134734",
+    "project_id": "classtag-bb113",
+    "storage_bucket": "classtag-bb113.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:123456789012:android:1234567890abcdef",
+        "mobilesdk_app_id": "1:429802134734:android:6e8cfefc6424ff85f4c49f",
         "android_client_info": {
           "package_name": "com.example.classtag"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyPlaceholderKeyForClassTagApp12345"
+          "current_key": "AIzaSyBVXQZKAhn4tIMX7682c88AE9JiiY3X3e8"
         }
       ],
       "services": {

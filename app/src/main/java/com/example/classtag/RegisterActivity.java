@@ -118,6 +118,7 @@ public class RegisterActivity extends AppCompatActivity {
                             }
                         }
                         showLoading(false);
+                        AuthHelper.registerUser(RegisterActivity.this, email, password, name);
                         AuthHelper.setLocalUserSession(RegisterActivity.this, email, name);
                         Toast.makeText(RegisterActivity.this, R.string.msg_register_success, Toast.LENGTH_SHORT).show();
 
@@ -128,7 +129,8 @@ public class RegisterActivity extends AppCompatActivity {
                     });
         } else {
             showLoading(false);
-            AuthHelper.setLocalUserSession(RegisterActivity.this, email, name);
+            AuthHelper.registerUser(RegisterActivity.this, email, password, name);
+                        AuthHelper.setLocalUserSession(RegisterActivity.this, email, name);
             Toast.makeText(RegisterActivity.this, R.string.msg_register_success, Toast.LENGTH_SHORT).show();
 
             Intent intent = new Intent(RegisterActivity.this, MainActivity.class);

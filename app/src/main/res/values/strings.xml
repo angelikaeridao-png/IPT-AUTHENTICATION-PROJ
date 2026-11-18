@@ -49,6 +49,8 @@
     <string name="error_password_required">Password is required</string>
     <string name="error_password_min_length">Password must be at least 6 characters</string>
     <string name="error_passwords_dont_match">Passwords do not match</string>
+    <string name="error_account_not_registered">This account is not registered yet. Please register first.</string>
+    <string name="error_invalid_credentials">Incorrect password. Please try again.</string>
     <string name="error_auth_failed">Authentication failed: %1$s</string>
     <string name="msg_login_success">Welcome back!</string>
     <string name="msg_register_success">Account registered successfully!</string>

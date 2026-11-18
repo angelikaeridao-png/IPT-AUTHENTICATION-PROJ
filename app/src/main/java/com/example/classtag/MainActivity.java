@@ -15,6 +15,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.core.widget.NestedScrollView;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -31,12 +32,16 @@ public class MainActivity extends AppCompatActivity {
     private SubjectTagAdapter subjectAdapter;
     private List<SubjectTag> allSubjects;
     private List<SubjectTag> filteredSubjects;
+    private List<ScheduleItem> allScheduleItems;
+    private List<Announcement> allAnnouncements;
+
+    private EditText etSearch;
+    private RecyclerView rvSubjects;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Check authentication
         if (!AuthHelper.isLoggedIn(this)) {
             redirectToLogin();
             return;
@@ -44,13 +49,16 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
+        allScheduleItems = getSampleSchedule();
+        allAnnouncements = getSampleAnnouncements();
+
         setupGreeting();
         setupHeaderButtons();
         setupStats();
-        setupSchedule();
+        renderSchedule("");
         setupSubjectGrid();
         setupSearchFilter();
-        setupAnnouncements();
+        renderAnnouncements("");
         setupBottomNav();
     }
 
@@ -69,7 +77,6 @@ public class MainActivity extends AppCompatActivity {
         finish();
     }
 
-    /** Sets a time-of-day aware greeting with user name. */
     private void setupGreeting() {
         TextView tvGreeting = findViewById(R.id.tvGreeting);
         int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
@@ -87,17 +94,14 @@ public class MainActivity extends AppCompatActivity {
         tvGreeting.setText(getString(R.string.greeting_template, greeting, userName));
     }
 
-    /** Wires up Logout and Profile buttons in the header. */
     private void setupHeaderButtons() {
         MaterialButton btnLogout = findViewById(R.id.btnLogout);
         FrameLayout btnProfileHeader = findViewById(R.id.btnProfileHeader);
 
-        // Working Button: Logout from Header
         if (btnLogout != null) {
             btnLogout.setOnClickListener(v -> performLogout());
         }
 
-        // Working Button: Profile Click
         if (btnProfileHeader != null) {
             btnProfileHeader.setOnClickListener(v -> showProfileDialog());
         }
@@ -123,7 +127,6 @@ public class MainActivity extends AppCompatActivity {
                 .show();
     }
 
-    /** Populates attendance / GPA / assignments-due stat cards. */
     private void setupStats() {
         TextView tvAttendance = findViewById(R.id.tvStatAttendance);
         TextView tvGpa = findViewById(R.id.tvStatGpa);
@@ -134,33 +137,43 @@ public class MainActivity extends AppCompatActivity {
         tvDue.setText(R.string.stat_due_value);
     }
 
-    /** Builds the horizontally scrolling "Today schedule" strip. */
-    private void setupSchedule() {
+    private void renderSchedule(String filterQuery) {
         LinearLayout scheduleContainer = findViewById(R.id.scheduleContainer);
+        if (scheduleContainer == null || allScheduleItems == null) return;
+        scheduleContainer.removeAllViews();
+
         LayoutInflater inflater = LayoutInflater.from(this);
+        String clean = filterQuery != null ? filterQuery.trim().toLowerCase().replaceAll("^#", "") : "";
 
-        List<ScheduleItem> schedule = getTodaysSchedule();
-        for (ScheduleItem item : schedule) {
+        for (ScheduleItem item : allScheduleItems) {
+            if (item == null) continue;
+            if (!clean.isEmpty()) {
+                String subject = item.getSubject() != null ? item.getSubject().toLowerCase() : "";
+                String room = item.getRoom() != null ? item.getRoom().toLowerCase() : "";
+                String time = item.getTime() != null ? item.getTime().toLowerCase() : "";
+                if (!subject.contains(clean) && !room.contains(clean) && !time.contains(clean)) {
+                    continue;
+                }
+            }
+
             View cardView = inflater.inflate(R.layout.item_schedule_card, scheduleContainer, false);
-
             TextView tvTime = cardView.findViewById(R.id.tvScheduleTime);
             TextView tvSubject = cardView.findViewById(R.id.tvScheduleSubject);
             TextView tvRoom = cardView.findViewById(R.id.tvScheduleRoom);
             View vTimeBar = cardView.findViewById(R.id.vTimeBar);
 
-            tvTime.setText(item.getTime());
-            tvSubject.setText(item.getSubject());
-            tvRoom.setText(item.getRoom());
-            vTimeBar.setBackgroundColor(ContextCompat.getColor(this, item.getAccentColorRes()));
+            if (tvTime != null) tvTime.setText(item.getTime());
+            if (tvSubject != null) tvSubject.setText(item.getSubject());
+            if (tvRoom != null) tvRoom.setText(item.getRoom());
+            if (vTimeBar != null) vTimeBar.setBackgroundColor(ContextCompat.getColor(this, item.getAccentColorRes()));
 
-            cardView.setOnClickListener(v ->
-                    Toast.makeText(this, item.getSubject() + " · " + item.getTime(), Toast.LENGTH_SHORT).show());
+            cardView.setOnClickListener(v -> showScheduleItemOptions(item));
 
             scheduleContainer.addView(cardView);
         }
     }
 
-    private List<ScheduleItem> getTodaysSchedule() {
+    private List<ScheduleItem> getSampleSchedule() {
         List<ScheduleItem> list = new ArrayList<>();
         list.add(new ScheduleItem("8:00 – 8:45 AM", "Calculus I", "Room 204 · Mr. Alcaraz", R.color.brand_blue));
         list.add(new ScheduleItem("9:00 – 9:45 AM", "Bio-Chemistry", "Room 118 · Ms. Reyes", R.color.accent_green));
@@ -171,9 +184,8 @@ public class MainActivity extends AppCompatActivity {
         return list;
     }
 
-    /** Builds the 2-column grid of class tags. */
     private void setupSubjectGrid() {
-        RecyclerView rvSubjects = findViewById(R.id.rvSubjects);
+        rvSubjects = findViewById(R.id.rvSubjects);
         rvSubjects.setLayoutManager(new GridLayoutManager(this, 2));
 
         allSubjects = getSampleSubjects();
@@ -184,17 +196,24 @@ public class MainActivity extends AppCompatActivity {
         rvSubjects.setAdapter(subjectAdapter);
     }
 
-    /** Enables real-time search filtering. */
     private void setupSearchFilter() {
-        EditText etSearch = findViewById(R.id.etSearch);
+        etSearch = findViewById(R.id.etSearch);
+        NestedScrollView mainScrollView = findViewById(R.id.mainScrollView);
+
         if (etSearch != null) {
+            etSearch.setOnFocusChangeListener((v, hasFocus) -> {
+                if (hasFocus && mainScrollView != null) {
+                    mainScrollView.post(() -> mainScrollView.scrollTo(0, 0));
+                }
+            });
+
             etSearch.addTextChangedListener(new TextWatcher() {
                 @Override
                 public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
                 @Override
                 public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    filterSubjects(s.toString());
+                    filterDashboard(s.toString());
                 }
 
                 @Override
@@ -203,19 +222,29 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void filterSubjects(String query) {
+    private void filterDashboard(String query) {
+        String clean = query != null ? query.trim().toLowerCase().replaceAll("^#", "") : "";
+
+        if (allSubjects == null || filteredSubjects == null) return;
+
         filteredSubjects.clear();
-        if (query.trim().isEmpty()) {
+        if (clean.isEmpty()) {
             filteredSubjects.addAll(allSubjects);
         } else {
-            String lower = query.toLowerCase().trim();
             for (SubjectTag tag : allSubjects) {
-                if (tag.getName().toLowerCase().contains(lower)) {
+                if (tag == null || tag.getName() == null) continue;
+                String tagName = tag.getName().toLowerCase().replaceAll("^#", "");
+                if (tagName.contains(clean) || tag.getName().toLowerCase().contains(clean)) {
                     filteredSubjects.add(tag);
                 }
             }
         }
-        subjectAdapter.updateList(filteredSubjects);
+        if (subjectAdapter != null) {
+            subjectAdapter.updateList(filteredSubjects);
+        }
+
+        renderSchedule(clean);
+        renderAnnouncements(clean);
     }
 
     private List<SubjectTag> getSampleSubjects() {
@@ -235,23 +264,32 @@ public class MainActivity extends AppCompatActivity {
         return list;
     }
 
-    /** Builds the announcements list. */
-    private void setupAnnouncements() {
+    private void renderAnnouncements(String filterQuery) {
         LinearLayout announcementContainer = findViewById(R.id.announcementContainer);
+        if (announcementContainer == null || allAnnouncements == null) return;
+        announcementContainer.removeAllViews();
+
         LayoutInflater inflater = LayoutInflater.from(this);
+        String clean = filterQuery != null ? filterQuery.trim().toLowerCase().replaceAll("^#", "") : "";
 
-        List<Announcement> announcements = getSampleAnnouncements();
-        for (Announcement announcement : announcements) {
+        for (Announcement announcement : allAnnouncements) {
+            if (announcement == null) continue;
+            if (!clean.isEmpty()) {
+                String title = announcement.getTitle() != null ? announcement.getTitle().toLowerCase() : "";
+                String meta = announcement.getMeta() != null ? announcement.getMeta().toLowerCase() : "";
+                if (!title.contains(clean) && !meta.contains(clean)) {
+                    continue;
+                }
+            }
+
             View rowView = inflater.inflate(R.layout.item_announcement, announcementContainer, false);
-
             TextView tvTitle = rowView.findViewById(R.id.tvAnnouncementTitle);
             TextView tvMeta = rowView.findViewById(R.id.tvAnnouncementMeta);
 
-            tvTitle.setText(announcement.getTitle());
-            tvMeta.setText(announcement.getMeta());
+            if (tvTitle != null) tvTitle.setText(announcement.getTitle());
+            if (tvMeta != null) tvMeta.setText(announcement.getMeta());
 
-            rowView.setOnClickListener(v ->
-                    Toast.makeText(this, announcement.getTitle(), Toast.LENGTH_SHORT).show());
+            rowView.setOnClickListener(v -> showAnnouncementOptions(announcement));
 
             announcementContainer.addView(rowView);
         }
@@ -265,22 +303,21 @@ public class MainActivity extends AppCompatActivity {
         return list;
     }
 
-    /** Wires up bottom navigation, including Working Add Class Tag Button. */
     private void setupBottomNav() {
         BottomNavigationView bottomNav = findViewById(R.id.bottomNav);
         bottomNav.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
             if (id == R.id.nav_home) {
-                Toast.makeText(this, "Home", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Home Dashboard", Toast.LENGTH_SHORT).show();
                 return true;
             } else if (id == R.id.nav_schedule) {
-                Toast.makeText(this, "Schedule", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Today's Schedule", Toast.LENGTH_SHORT).show();
                 return true;
             } else if (id == R.id.nav_add) {
-                showAddClassTagDialog();
-                return true;
+                showAddChooserDialog();
+                return false;
             } else if (id == R.id.nav_notices) {
-                Toast.makeText(this, "Notices", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Notices & Announcements", Toast.LENGTH_SHORT).show();
                 return true;
             } else if (id == R.id.nav_profile) {
                 showProfileDialog();
@@ -290,7 +327,23 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    /** Working Button Feature: Show Add Class Tag Dialog */
+    private void showAddChooserDialog() {
+        String[] options = {"Class Tag", "Schedule Note / Class", "Announcement / Notice"};
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("What would you like to add?")
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        showAddClassTagDialog();
+                    } else if (which == 1) {
+                        showAddScheduleNoteDialog();
+                    } else if (which == 2) {
+                        showAddAnnouncementDialog();
+                    }
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
+                .show();
+    }
+
     private void showAddClassTagDialog() {
         AlertDialog.Builder builder = new MaterialAlertDialogBuilder(this);
         builder.setTitle(R.string.dialog_add_tag_title);
@@ -311,7 +364,11 @@ public class MainActivity extends AppCompatActivity {
                 }
                 SubjectTag newTag = new SubjectTag(tagName, "1 topic", R.color.brand_blue);
                 allSubjects.add(0, newTag);
-                filterSubjects("");
+
+                if (etSearch != null) etSearch.setText("");
+                filterDashboard("");
+
+                if (rvSubjects != null) rvSubjects.smoothScrollToPosition(0);
                 Toast.makeText(MainActivity.this, "Added " + tagName, Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(MainActivity.this, "Tag name cannot be empty", Toast.LENGTH_SHORT).show();
@@ -320,5 +377,121 @@ public class MainActivity extends AppCompatActivity {
 
         builder.setNegativeButton(R.string.btn_cancel, (dialog, which) -> dialog.cancel());
         builder.show();
+    }
+
+    private void showAddScheduleNoteDialog() {
+        AlertDialog.Builder builder = new MaterialAlertDialogBuilder(this);
+        builder.setTitle("Add Schedule Note");
+
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        int margin = (int) (16 * getResources().getDisplayMetrics().density);
+        layout.setPadding(margin, margin, margin, margin);
+
+        final EditText etSubject = new EditText(this);
+        etSubject.setHint("Subject (e.g. Robotics)");
+        layout.addView(etSubject);
+
+        final EditText etTime = new EditText(this);
+        etTime.setHint("Time (e.g. 3:00 – 3:45 PM)");
+        layout.addView(etTime);
+
+        final EditText etRoom = new EditText(this);
+        etRoom.setHint("Room / Teacher (e.g. Lab 2 · Coach D.)");
+        layout.addView(etRoom);
+
+        builder.setView(layout);
+
+        builder.setPositiveButton("Add Note", (dialog, which) -> {
+            String subject = etSubject.getText().toString().trim();
+            String time = etTime.getText().toString().trim();
+            String room = etRoom.getText().toString().trim();
+
+            if (!subject.isEmpty()) {
+                if (time.isEmpty()) time = "TBD";
+                if (room.isEmpty()) room = "General Room";
+
+                ScheduleItem item = new ScheduleItem(time, subject, room, R.color.brand_blue);
+                allScheduleItems.add(0, item);
+
+                if (etSearch != null) etSearch.setText("");
+                filterDashboard("");
+
+                Toast.makeText(MainActivity.this, "Added schedule for " + subject, Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(MainActivity.this, "Subject name is required", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+        builder.show();
+    }
+
+    private void showAddAnnouncementDialog() {
+        AlertDialog.Builder builder = new MaterialAlertDialogBuilder(this);
+        builder.setTitle("Add Announcement");
+
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        int margin = (int) (16 * getResources().getDisplayMetrics().density);
+        layout.setPadding(margin, margin, margin, margin);
+
+        final EditText etTitle = new EditText(this);
+        etTitle.setHint("Announcement Title");
+        layout.addView(etTitle);
+
+        final EditText etMeta = new EditText(this);
+        etMeta.setHint("Author / Info (e.g. Posted by Admin)");
+        layout.addView(etMeta);
+
+        builder.setView(layout);
+
+        builder.setPositiveButton("Post", (dialog, which) -> {
+            String title = etTitle.getText().toString().trim();
+            String meta = etMeta.getText().toString().trim();
+
+            if (!title.isEmpty()) {
+                if (meta.isEmpty()) meta = "Posted just now";
+
+                Announcement announcement = new Announcement(title, meta);
+                allAnnouncements.add(0, announcement);
+
+                if (etSearch != null) etSearch.setText("");
+                filterDashboard("");
+
+                Toast.makeText(MainActivity.this, "Posted announcement", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(MainActivity.this, "Title is required", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+        builder.show();
+    }
+
+    private void showScheduleItemOptions(ScheduleItem item) {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(item.getSubject())
+                .setMessage("Time: " + item.getTime() + "\nLocation: " + item.getRoom())
+                .setPositiveButton("Remove", (dialog, which) -> {
+                    allScheduleItems.remove(item);
+                    filterDashboard(etSearch != null ? etSearch.getText().toString() : "");
+                    Toast.makeText(MainActivity.this, "Removed " + item.getSubject(), Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Close", (dialog, which) -> dialog.dismiss())
+                .show();
+    }
+
+    private void showAnnouncementOptions(Announcement announcement) {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(announcement.getTitle())
+                .setMessage(announcement.getMeta())
+                .setPositiveButton("Remove", (dialog, which) -> {
+                    allAnnouncements.remove(announcement);
+                    filterDashboard(etSearch != null ? etSearch.getText().toString() : "");
+                    Toast.makeText(MainActivity.this, "Removed announcement", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Close", (dialog, which) -> dialog.dismiss())
+                .show();
     }
 }

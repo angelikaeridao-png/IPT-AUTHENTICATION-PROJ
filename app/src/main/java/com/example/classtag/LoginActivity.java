@@ -31,7 +31,6 @@ public class LoginActivity extends AppCompatActivity {
 
         mAuth = AuthHelper.getAuth(this);
 
-        // Check if user is already signed in
         if (AuthHelper.isLoggedIn(this)) {
             navigateToMain();
             return;
@@ -57,13 +56,10 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
-        // Working Button 1: Login
         btnLogin.setOnClickListener(v -> performLogin());
 
-        // Working Button 2: Demo / Guest Login
         btnDemoLogin.setOnClickListener(v -> performDemoLogin());
 
-        // Working Button 3: Navigation to Register Activity
         tvGoToRegister.setOnClickListener(v -> {
             Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);
             startActivity(intent);
@@ -89,28 +85,39 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
+        if (!AuthHelper.isEmailRegistered(this, email)) {
+            tilEmail.setError(getString(R.string.error_account_not_registered));
+            etEmail.requestFocus();
+            return;
+        }
+
+        if (!AuthHelper.verifyUserPassword(this, email, password)) {
+            tilPassword.setError(getString(R.string.error_invalid_credentials));
+            etPassword.requestFocus();
+            return;
+        }
+
         showLoading(true);
 
         if (mAuth != null) {
             mAuth.signInWithEmailAndPassword(email, password)
                     .addOnCompleteListener(this, task -> {
                         showLoading(false);
-                        if (task.isSuccessful()) {
-                            String name = email.split("@")[0];
+                        if (task.isSuccessful() || AuthHelper.verifyUserPassword(LoginActivity.this, email, password)) {
+                            String name = AuthHelper.getRegisteredName(LoginActivity.this, email);
+                            if (TextUtils.isEmpty(name)) { name = email.split("@")[0]; }
                             AuthHelper.setLocalUserSession(LoginActivity.this, email, name);
                             Toast.makeText(LoginActivity.this, R.string.msg_login_success, Toast.LENGTH_SHORT).show();
                             navigateToMain();
                         } else {
-                            // Fallback if API key is placeholder or network issue
-                            String name = email.split("@")[0];
-                            AuthHelper.setLocalUserSession(LoginActivity.this, email, name);
-                            Toast.makeText(LoginActivity.this, R.string.msg_login_success, Toast.LENGTH_SHORT).show();
-                            navigateToMain();
+                            String errorMsg = task.getException() != null ? task.getException().getMessage() : "Authentication failed";
+                            Toast.makeText(LoginActivity.this, getString(R.string.error_auth_failed, errorMsg), Toast.LENGTH_SHORT).show();
                         }
                     });
         } else {
             showLoading(false);
-            String name = email.split("@")[0];
+            String name = AuthHelper.getRegisteredName(LoginActivity.this, email);
+                            if (TextUtils.isEmpty(name)) { name = email.split("@")[0]; }
             AuthHelper.setLocalUserSession(LoginActivity.this, email, name);
             Toast.makeText(LoginActivity.this, R.string.msg_login_success, Toast.LENGTH_SHORT).show();
             navigateToMain();
